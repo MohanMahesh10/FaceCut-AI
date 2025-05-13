@@ -1,0 +1,53 @@
+# Virtual Environments
+venv/
+venv_mp/
+venv_py311/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Docker
+.dockerignore
+
+# Node modules
+node_modules/
+.svelte-kit/
+
+# Environment variables
+.env
+.env.local
+
+# IDE files
+.vscode/
+.idea/
+
+# Large binary files
+*.pyd
+*.dll
+*.exe
+*.so
+facecut-ai-app/backend/venv*/
+facecut-ai-app/backend/venv_mp/
+facecut-ai-app/frontend/node_modules/
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*

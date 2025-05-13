@@ -1,0 +1,77 @@
+[
+    {
+        "face_shape": "Oval",
+        "haircuts": [
+            {
+                "name": "Classic Bob",
+                "image": "haircuts/classic_bob.png",
+                "description": "A timeless and versatile cut."
+            },
+            {
+                "name": "Pixie Cut",
+                "image": "haircuts/pixie_cut.png",
+                "description": "Short and stylish."
+            }
+        ]
+    },
+    {
+        "face_shape": "Round",
+        "haircuts": [
+            {
+                "name": "Long Layers",
+                "image": "haircuts/long_layers.png",
+                "description": "Adds definition and length."
+            },
+            {
+                "name": "Side-Swept Bangs",
+                "image": "haircuts/side_swept_bangs.png",
+                "description": "Helps to slim the face."
+            }
+        ]
+    },
+    {
+        "face_shape": "Square",
+        "haircuts": [
+            {
+                "name": "Angular Bob",
+                "image": "dall-e-3_generate_Angular_Bob.png",
+                "description": "Softens the jawline."
+            },
+            {
+                "name": "Layered Cut",
+                "image": "haircuts/layered_cut.png",
+                "description": "Adds softness around the face."
+            }
+        ]
+    },
+    {
+        "face_shape": "Heart",
+        "haircuts": [
+            {
+                "name": "Chin-Length Bob",
+                "image": "haircuts/chin_length_bob.png",
+                "description": "Balances a wider forehead."
+            }
+        ]
+    },
+    {
+        "face_shape": "Diamond",
+        "haircuts": [
+            {
+                "name": "Textured Lob",
+                "image": "haircuts/textured_lob.png",
+                "description": "Softens angular features."
+            }
+        ]
+    },
+    {
+        "face_shape": "Other Shape",
+        "haircuts": [
+            {
+                "name": "Consult Stylist",
+                "image": "haircuts/consult_stylist.png",
+                "description": "Try a personalized consultation."
+            }
+        ]
+    }
+] 
