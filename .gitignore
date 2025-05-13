@@ -1,4 +1,26 @@
-node_modules
+# Virtual Environments
+venv/
+venv_mp/
+venv_py311/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Docker
+.dockerignore
+
+# Node modules
+node_modules/
+.svelte-kit/
+
+# Environment variables
+.env
+.env.local
+
+# IDE files
+.vscode/
+.idea/
 
 # Output
 .output
@@ -13,7 +35,6 @@ node_modules
 Thumbs.db
 
 # Env
-.env
 .env.*
 !.env.example
 !.env.test
