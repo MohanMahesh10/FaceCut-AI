@@ -1,6 +1,13 @@
 # FaceCut AI - Intelligent Haircut Recommendation System
 
+
+![Screenshot 2025-05-14 220448](https://github.com/user-attachments/assets/73a2f15f-feff-4394-ae5e-0cb18162abfa)
+
+
 ## Introduction
+![Screenshot 2025-05-14 012715](https://github.com/user-attachments/assets/0f27849a-61eb-4161-b607-4a1122a9f0ac)
+
+
 
 FaceCut AI is an innovative application that uses artificial intelligence to analyze your face shape and recommend suitable haircuts. The system combines computer vision technology with a database of haircut styles to provide personalized recommendations based on facial geometry.
 
