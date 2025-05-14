@@ -1,4 +1,4 @@
-# FaceCut AI - Intelligent Haircut Recommendation System
+![diagram-export-5-14-2025-10_18_10-PM](https://github.com/user-attachments/assets/ea5713db-9661-472d-8adb-1998ee91c489)# FaceCut AI - Intelligent Haircut Recommendation System
 
 
 ![Screenshot 2025-05-14 220448](https://github.com/user-attachments/assets/73a2f15f-feff-4394-ae5e-0cb18162abfa)
@@ -25,6 +25,9 @@ By capturing your face through a webcam or analyzing an uploaded photo, FaceCut 
 - **Docker Deployment**: Easy setup using Docker containers for both development and production
 
 ## Technology Stack
+
+
+![diagram-export-5-14-2025-10_18_10-PM](https://github.com/user-attachments/assets/d262d2df-eb42-4fa4-87f9-722ebfefbd55)
 
 ### Backend
 - **Python 3.10**: Core programming language
