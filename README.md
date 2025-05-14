@@ -1,4 +1,4 @@
-![diagram-export-5-14-2025-10_18_10-PM](https://github.com/user-attachments/assets/ea5713db-9661-472d-8adb-1998ee91c489)# FaceCut AI - Intelligent Haircut Recommendation System
+# FaceCut AI - Intelligent Haircut Recommendation System
 
 
 ![Screenshot 2025-05-14 220448](https://github.com/user-attachments/assets/73a2f15f-feff-4394-ae5e-0cb18162abfa)
