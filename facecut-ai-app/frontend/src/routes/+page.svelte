@@ -1,5 +1,7 @@
 <script>
   import { onDestroy } from 'svelte';
+  import { PUBLIC_API_BASE } from '$env/static/public';
+  const API_BASE = PUBLIC_API_BASE || '';
 
   let selectedFile = null;
   let message = '';
@@ -100,7 +102,7 @@
     recommendedHaircuts = [];
     isLoading = true;
     try {
-      const response = await fetch('http://backend:8000/uploadimage/', {
+      const response = await fetch(`${API_BASE}/uploadimage/`, {
         method: 'POST',
         body: formData,
       });
@@ -206,7 +208,7 @@
         {#each recommendedHaircuts as haircut}
           <div class="haircut-card">
             {#if haircut.image}
-              <img src="/haircuts/{haircut.image}" alt="{haircut.name}" class="haircut-image"/>
+              <img src="haircuts/{haircut.image}" alt="{haircut.name}" class="haircut-image"/>
             {/if}
             <div class="haircut-info">
               <h4>{haircut.name}</h4>
