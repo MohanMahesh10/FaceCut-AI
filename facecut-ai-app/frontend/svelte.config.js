@@ -9,12 +9,12 @@ const config = {
 
 	kit: {
 		adapter: adapter({
-			pages: 'build',
-			assets: 'build',
-			fallback: 'index.html'
+			pages: '../docs',
+			assets: '../docs',
+			fallback: '404.html'
 		}),
 		paths: {
-			base: process.env.BASE_PATH || '',
+			base: process.env.BASE_PATH || (process.env.NODE_ENV === 'production' ? '/FaceCut-AI' : ''),
 			relative: true
 		}
 	}

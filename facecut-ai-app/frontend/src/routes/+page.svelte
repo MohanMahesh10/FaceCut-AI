@@ -208,7 +208,7 @@
         {#each recommendedHaircuts as haircut}
           <div class="haircut-card">
             {#if haircut.image}
-              <img src="haircuts/{haircut.image}" alt="{haircut.name}" class="haircut-image"/>
+              <img src="{`${API_BASE}/haircuts/${haircut.image}`}" alt="{haircut.name}" class="haircut-image"/>
             {/if}
             <div class="haircut-info">
               <h4>{haircut.name}</h4>
