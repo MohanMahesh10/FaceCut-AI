@@ -1,5 +1,7 @@
 <script>
   import { onDestroy } from 'svelte';
+  import { PUBLIC_API_BASE } from '$env/static/public';
+  const API_BASE = PUBLIC_API_BASE || 'http://127.0.0.1:8000';
 
   let selectedFile = null;
   let message = '';
@@ -87,6 +89,18 @@
     }
   }
 
+  function resolveImageUrl(imagePath) {
+    if (!imagePath) {
+      return '';
+    }
+    if (/^https?:\/\//i.test(imagePath)) {
+      return imagePath;
+    }
+    const sanitizedPath = imagePath.replace(/^\/+/, '');
+    const trimmedBase = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
+    return `${trimmedBase}/${sanitizedPath}`;
+  }
+
   async function handleSubmit() {
     let fileToUpload = selectedFile || capturedImageBlob;
     if (!fileToUpload) {
@@ -100,7 +114,8 @@
     recommendedHaircuts = [];
     isLoading = true;
     try {
-      const response = await fetch('http://localhost:8000/uploadimage/', {
+      const trimmedBase = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
+      const response = await fetch(`${trimmedBase}/uploadimage/`, {
         method: 'POST',
         body: formData,
       });
@@ -143,8 +158,9 @@
         <div class="card upload-card">
     <div class="camera-upload-options">
        {#if stream}
-        <div class="camera-container">
-            <video bind:this={videoElement} autoplay playsinline></video>
+    <div class="camera-container">
+      <!-- svelte-ignore a11y-media-has-caption -->
+      <video bind:this={videoElement} autoplay playsinline muted aria-label="Live camera preview for face analysis"></video>
                 <div class="camera-btn-row">
             <button class="secondary-button" on:click={captureImage} disabled={isLoading}>Capture Image</button>
                   <button class="secondary-button" on:click={stopCamera} disabled={isLoading}>Stop Camera</button>
@@ -185,7 +201,7 @@
 
     {#if imagePreviewUrl}
       <div class="image-preview-container">
-        <img src="{imagePreviewUrl}" alt="Image Preview" class="image-preview"/>
+  <img src="{imagePreviewUrl}" alt="Captured preview for analysis" class="image-preview"/>
       </div>
     {/if}
 
@@ -206,7 +222,7 @@
         {#each recommendedHaircuts as haircut}
           <div class="haircut-card">
             {#if haircut.image}
-              <img src="/haircuts/{haircut.image}" alt="{haircut.name}" class="haircut-image"/>
+              <img src="{resolveImageUrl(haircut.image)}" alt="{haircut.name}" class="haircut-image"/>
             {/if}
             <div class="haircut-info">
               <h4>{haircut.name}</h4>

@@ -2,6 +2,7 @@
 venv/
 venv_mp/
 venv_py311/
+venv_new/
 __pycache__/
 *.pyc
 *.pyo
@@ -30,6 +31,9 @@ node_modules/
 facecut-ai-app/backend/venv*/
 facecut-ai-app/backend/venv_mp/
 facecut-ai-app/frontend/node_modules/
+backend/venv*/
+frontend/node_modules/
+frontend/.svelte-kit/
 
 # Output
 .output

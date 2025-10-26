@@ -1,5 +1,5 @@
 @echo off
-SET "VENV_PYTHON_EXECUTABLE=C:\Users\MOHAN MAHESH\Desktop\MM projects\FaceCut AI\facecut-ai-app\backend\venv\Scripts\python.exe"
+SET "VENV_PYTHON_EXECUTABLE=C:\Users\MOHAN MAHESH\Desktop\MM projects\FaceCut AI\facecut-ai-app\backend\venv_new\Scripts\python.exe"
 
 IF EXIST "%VENV_PYTHON_EXECUTABLE%" (
     echo Starting FastAPI backend...

@@ -48,6 +48,46 @@ By capturing your face through a webcam or analyzing an uploaded photo, FaceCut 
 5. **Recommendation Engine**: The system matches your face shape with suitable haircut styles
 6. **Result Presentation**: Recommendations are displayed with visual examples
 
+## Deployment
+
+### Backend API
+
+- Provision a Python 3.12 runtime (Render, Railway, Azure App Service, etc.).
+- Install dependencies with `pip install -r backend/requirements.txt`.
+- Optional: set `ALLOWED_ORIGINS` to a comma-separated list of additional domains that may call the API.
+- Start the service with `uvicorn main:app --host 0.0.0.0 --port 8000`.
+
+### Frontend (GitHub Pages)
+
+1. Set a repository secret or variable named `PUBLIC_API_BASE` with the deployed backend URL (for example `https://your-backend-host.com`).
+2. Push to `main` to trigger the GitHub Actions workflow that builds the SvelteKit app into `docs/` and publishes to Pages.
+3. The static site will be available at `https://<username>.github.io/FaceCut-AI`.
+
+### Local Development
+
+- Backend: `cd backend && python -m venv venv && venv\Scripts\activate && pip install -r requirements.txt && uvicorn main:app --reload`.
+- Frontend: `cd frontend && npm install && npm run dev` (requires a running backend API and `PUBLIC_API_BASE` in `.env`).
+
+## Deployment
+
+### Backend API
+
+- The FastAPI service must run on an external host (Render, Railway, Azure App Service, etc.).
+- Create a Python 3.12 environment and install the dependencies in `backend/requirements.txt`.
+- Set the environment variable `ALLOWED_ORIGINS` if you need to permit additional domains.
+- Start the API with `uvicorn main:app --host 0.0.0.0 --port 8000`.
+
+### Frontend (GitHub Pages)
+
+1. Update the GitHub repository secret `PUBLIC_API_BASE` with the backend URL (e.g. `https://your-api-host.com`).
+2. Push to `main` to trigger the `Deploy FaceCut AI to GitHub Pages` GitHub Action.
+3. The static site is published from the `docs/` folder to `https://<username>.github.io/FaceCut-AI`.
+
+### Local Development
+
+- Backend: `cd facecut-ai-app/backend && .\venv_new\Scripts\activate && uvicorn main:app --reload`
+- Frontend: `cd facecut-ai-app/frontend && npm install && npm run dev`
+
 ## Face Shape Categories
 
 FaceCut AI can detect and classify faces into the following shapes:

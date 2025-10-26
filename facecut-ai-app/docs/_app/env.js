@@ -1,1 +1,1 @@
-export const env={"PUBLIC_API_BASE":"https://your-backend.example.com"}
+export const env={"PUBLIC_API_BASE":"https://your-backend-url.com"}

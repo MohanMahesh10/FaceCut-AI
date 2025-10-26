@@ -1,13 +1,13 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
+import io
+import json
+import logging
+import os
+
 import cv2
 import numpy as np
-import math
-import json
-import io
-# import mediapipe as mp
-import logging
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 # Remove Azure imports and config
 # from azure.cognitiveservices.vision.face import FaceClient
@@ -23,20 +23,27 @@ import logging
 
 app = FastAPI()
 
-# Add CORS middleware
-# This is needed to allow the frontend (running on a different port) to make requests
+# Add CORS middleware so the static frontend (local or GitHub Pages) can call into the API
 origins = [
     "http://localhost",
-    "http://localhost:5173", # Assuming your Svelte dev server runs on port 5173
+    "http://localhost:5173",
     "http://127.0.0.1",
     "http://127.0.0.1:5173",
-    # Add your Azure frontend URL here when deployed
+    "https://mohanmahesh10.github.io",
+    "https://mohanmahesh10.github.io/FaceCut-AI",
 ]
+
+env_overrides = os.getenv("ALLOWED_ORIGINS")
+if env_overrides:
+    origins.extend(origin.strip() for origin in env_overrides.split(",") if origin.strip())
+
+seen = set()
+origins = [origin for origin in origins if not (origin in seen or seen.add(origin))]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -44,51 +51,29 @@ app.add_middleware(
 # Mount a directory to serve static files (haircut images)
 app.mount("/haircuts", StaticFiles(directory="haircuts"), name="haircuts")
 
-# Restore OpenCV Haar cascade for face detection
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
 
-def get_face_landmarks_and_dimensions(img):
-    # mp_face_mesh = mp.solutions.face_mesh
-    # with mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1, refine_landmarks=True) as face_mesh:
-    #     results = face_mesh.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-    #     if not results.multi_face_landmarks:
-    #         return None, None
-    #     landmarks = results.multi_face_landmarks[0].landmark
-    #     h, w, _ = img.shape
-    #     # Helper to convert normalized landmark to pixel coordinates
-    #     def lm(idx):
-    #         return int(landmarks[idx].x * w), int(landmarks[idx].y * h)
-    #     # Indices for key points (Mediapipe FaceMesh)
-    #     # Chin: 152, Forehead: 10, Left Cheekbone: 234, Right Cheekbone: 454
-    #     # Left Jaw: 234, Right Jaw: 454, Left Temple: 127, Right Temple: 356
-    #     chin = lm(152)
-    #     forehead = lm(10)
-    #     left_cheekbone = lm(234)
-    #     right_cheekbone = lm(454)
-    #     left_jaw = lm(234)
-    #     right_jaw = lm(454)
-    #     left_temple = lm(127)
-    #     right_temple = lm(356)
-    #     # Calculate distances
-    #     def dist(a, b):
-    #         return math.dist(a, b)
-    #     face_length = dist(forehead, chin)
-    #     cheekbone_width = dist(left_cheekbone, right_cheekbone)
-    #     jawline_width = dist(left_jaw, right_jaw)
-    #     forehead_width = dist(left_temple, right_temple)
-    #     return {
-    #         'face_length': face_length,
-    #         'cheekbone_width': cheekbone_width,
-    #         'jawline_width': jawline_width,
-    #         'forehead_width': forehead_width
-    #     }, landmarks
-    # Dummy: always return some dimensions
+
+def get_face_landmarks_and_dimensions(img: np.ndarray):
+    """Estimate core facial proportions using Haar cascade detection."""
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
+    if len(faces) == 0:
+        return None
+
+    _, _, w, h = max(faces, key=lambda f: f[2] * f[3])
+
+    face_length = float(h)
+    cheekbone_width = float(w * 0.9)
+    jawline_width = float(w * 0.85)
+    forehead_width = float(w * 0.8)
+
     return {
-        'face_length': 180,
-        'cheekbone_width': 140,
-        'jawline_width': 130,
-        'forehead_width': 135
-    }, None
+        "face_length": face_length,
+        "cheekbone_width": cheekbone_width,
+        "jawline_width": jawline_width,
+        "forehead_width": forehead_width,
+    }
 
 def classify_face_shape_landmarks(dimensions):
     cheekbone_width = dimensions['cheekbone_width']
@@ -139,8 +124,7 @@ async def upload_image(file: UploadFile = File(...)):
     img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
     if img is None:
         raise HTTPException(status_code=400, detail="Invalid image file.")
-    # Use Mediapipe for face landmarks and measurements
-    dimensions, landmarks = get_face_landmarks_and_dimensions(img)
+    dimensions = get_face_landmarks_and_dimensions(img)
     if dimensions is None:
         raise HTTPException(status_code=400, detail="No face detected.")
     face_shape = classify_face_shape_landmarks(dimensions)
