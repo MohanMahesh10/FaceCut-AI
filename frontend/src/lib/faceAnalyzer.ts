@@ -1,94 +1,88 @@
-const OPENCV_JS_URL = 'https://docs.opencv.org/4.x/opencv.js';
-const CASCADE_FILE_NAME = 'haarcascade_frontalface_default.xml';
-const CASCADE_REMOTE_PATH =
-	'https://raw.githubusercontent.com/opencv/opencv/4.x/data/haarcascades/haarcascade_frontalface_default.xml';
+import { FaceLandmarker, FilesetResolver, type FaceLandmarkerResult } from '@mediapipe/tasks-vision';
 
-type CV = typeof globalThis extends { cv: infer T } ? NonNullable<T> : any;
+const VISION_TASKS_WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm';
+const FACE_LANDMARKER_MODEL =
+	'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
 
-let cvReady: Promise<CV> | null = null;
-let cascadeReady: Promise<void> | null = null;
+type Landmarker = FaceLandmarker;
+
+let landmarkerReady: Promise<Landmarker> | null = null;
 
 function ensureBrowser(): void {
-	if (typeof globalThis.window === 'undefined' || typeof globalThis.document === 'undefined') {
+	if (typeof window === 'undefined') {
 		throw new TypeError('Face analysis is only available in the browser.');
 	}
 }
 
-function loadOpenCv(): Promise<CV> {
+async function createFaceLandmarker(): Promise<Landmarker> {
 	ensureBrowser();
-	if (cvReady) {
-		return cvReady;
+	if (landmarkerReady) {
+		return landmarkerReady;
 	}
 
-	cvReady = new Promise<CV>((resolve, reject) => {
-		const runtime = globalThis as typeof globalThis & { cv?: CV };
-		if (runtime.cv?.Mat) {
-			resolve(runtime.cv);
-			return;
-		}
+	landmarkerReady = (async () => {
+		const resolver = await FilesetResolver.forVisionTasks(VISION_TASKS_WASM_URL);
+		return FaceLandmarker.createFromOptions(resolver, {
+			baseOptions: {
+				modelAssetPath: FACE_LANDMARKER_MODEL
+			},
+			runningMode: 'IMAGE',
+			numFaces: 1
+		});
+	})();
 
-		const cleanup = (message: string) => {
-			cvReady = null;
-			reject(new Error(message));
+	return landmarkerReady;
+}
+
+async function blobToImageBitmap(blob: Blob): Promise<ImageBitmap> {
+	ensureBrowser();
+	const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+		const url = URL.createObjectURL(blob);
+		const img = new Image();
+		img.onload = () => {
+			URL.revokeObjectURL(url);
+			resolve(img);
 		};
-
-		const script = globalThis.document!.createElement('script');
-		script.src = OPENCV_JS_URL;
-		script.async = true;
-		script.defer = true;
-		script.onerror = () => cleanup('Failed to load OpenCV runtime. Please refresh and try again.');
-
-		const cvNamespace = runtime.cv ?? {};
-		cvNamespace.onRuntimeInitialized = () => {
-			if (runtime.cv?.Mat) {
-				resolve(runtime.cv);
-			} else {
-				cleanup('OpenCV initialisation failed.');
-			}
+		img.onerror = () => {
+			URL.revokeObjectURL(url);
+			reject(new Error('Unable to read the image. Try a different file.'));
 		};
-		runtime.cv = cvNamespace;
-
-		globalThis.document!.body.appendChild(script);
+		img.src = url;
+		img.crossOrigin = 'anonymous';
 	});
 
-	return cvReady;
-}
+	const maxDimension = 720;
+	const scale = Math.min(maxDimension / Math.max(image.width, image.height), 1);
+	const targetWidth = Math.round(image.width * scale);
+	const targetHeight = Math.round(image.height * scale);
 
-async function ensureCascade(cv: CV): Promise<void> {
-	if (cascadeReady) {
-		return cascadeReady;
+	if (scale === 1) {
+		return createImageBitmap(image);
 	}
 
-	cascadeReady = fetch(CASCADE_REMOTE_PATH, { cache: 'force-cache' })
-		.then(async (response) => {
-			if (!response.ok) {
-				throw new Error('Unable to download face detection model.');
-			}
-			const cascadeData = new Uint8Array(await response.arrayBuffer());
-			cv.FS_createDataFile('/', CASCADE_FILE_NAME, cascadeData, true, false, false);
-		})
-		.catch((error) => {
-			cascadeReady = null;
-			throw error;
-		});
-
-	return cascadeReady;
+	const canvas = document.createElement('canvas');
+	canvas.width = targetWidth;
+	canvas.height = targetHeight;
+	const ctx = canvas.getContext('2d');
+	if (!ctx) {
+		throw new Error('Unable to prepare image for analysis.');
+	}
+	ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+	return createImageBitmap(canvas);
 }
 
-async function createImageElement(blob: Blob): Promise<HTMLImageElement> {
-	const objectUrl = URL.createObjectURL(blob);
-	try {
-		const img = new Image();
-		img.src = objectUrl;
-		img.crossOrigin = 'anonymous';
-		await new Promise<void>((resolve, reject) => {
-			img.onload = () => resolve();
-			img.onerror = () => reject(new Error('Unable to read the image. Try a different file.'));
-		});
-		return img;
-	} finally {
-		URL.revokeObjectURL(objectUrl);
-	}
+function distance(
+	landmarks: NonNullable<FaceLandmarkerResult['faceLandmarks']>[number],
+	indexA: number,
+	indexB: number,
+	width: number,
+	height: number
+): number {
+	const a = landmarks[indexA];
+	const b = landmarks[indexB];
+	const dx = (a.x - b.x) * width;
+	const dy = (a.y - b.y) * height;
+	return Math.sqrt(dx * dx + dy * dy);
 }
 
 function classifyFaceShape(dimensions: {
@@ -122,43 +116,23 @@ function classifyFaceShape(dimensions: {
 	return 'Other Shape';
 }
 
-function measureFace(cv: CV, img: HTMLImageElement): { faceShape: string } {
-	const src = cv.imread(img);
-	const gray = new cv.Mat();
-	const faces = new cv.RectVector();
-	const msize = new cv.Size(0, 0);
-
-	try {
-		cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
-		const classifier = new cv.CascadeClassifier();
-		classifier.load(CASCADE_FILE_NAME);
-		classifier.detectMultiScale(gray, faces, 1.1, 5, 0, msize, new cv.Size());
-
-		if (!faces.size()) {
-			throw new Error('No face detected. Please try a clearer, front-facing photo.');
-		}
-
-		let chosen = faces.get(0);
-		for (let i = 1; i < faces.size(); i += 1) {
-			const candidate = faces.get(i);
-			if (candidate.width * candidate.height > chosen.width * chosen.height) {
-				chosen = candidate;
-			}
-		}
-
-		const faceLength = chosen.height;
-		const cheekboneWidth = chosen.width * 0.9;
-		const jawlineWidth = chosen.width * 0.85;
-		const foreheadWidth = chosen.width * 0.8;
-
-		const faceShape = classifyFaceShape({ faceLength, cheekboneWidth, jawlineWidth, foreheadWidth });
-		return { faceShape };
-	} finally {
-		src.delete();
-		gray.delete();
-		faces.delete();
-		msize.delete();
+function analyseLandmarks(
+	result: FaceLandmarkerResult,
+	frame: { width: number; height: number }
+): { faceShape: string } {
+	if (!result.faceLandmarks?.length) {
+		throw new Error('No face detected. Please try a clearer, front-facing photo.');
 	}
+
+	const landmarks = result.faceLandmarks[0];
+
+	const faceLength = distance(landmarks, 10, 152, frame.width, frame.height);
+	const cheekboneWidth = distance(landmarks, 234, 454, frame.width, frame.height);
+	const jawlineWidth = distance(landmarks, 58, 288, frame.width, frame.height);
+	const foreheadWidth = distance(landmarks, 71, 301, frame.width, frame.height);
+
+	const faceShape = classifyFaceShape({ faceLength, cheekboneWidth, jawlineWidth, foreheadWidth });
+	return { faceShape };
 }
 
 export async function analyzeFaceShape(blob: Blob): Promise<{ faceShape: string }> {
@@ -166,14 +140,17 @@ export async function analyzeFaceShape(blob: Blob): Promise<{ faceShape: string 
 		throw new Error('Please provide an image to analyse.');
 	}
 
-	const cv = await loadOpenCv();
-	await ensureCascade(cv);
-	const imgElement = await createImageElement(blob);
+	const landmarker = await createFaceLandmarker();
+	const bitmap = await blobToImageBitmap(blob);
 
-	return measureFace(cv, imgElement);
+	try {
+		const result = landmarker.detect(bitmap);
+		return analyseLandmarks(result, { width: bitmap.width, height: bitmap.height });
+	} finally {
+		bitmap.close?.();
+	}
 }
 
 export async function warmupFaceAnalyzer(): Promise<void> {
-	const cv = await loadOpenCv();
-	await ensureCascade(cv);
+	await createFaceLandmarker();
 }
