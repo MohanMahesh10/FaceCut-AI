@@ -33,6 +33,10 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
+      - name: Prepare SvelteKit
+        working-directory: ./frontend
+        run: npm run prepare || npx svelte-kit sync
+
       - name: Configure environment
         run: |
           echo "NODE_ENV=production" >> $GITHUB_ENV
