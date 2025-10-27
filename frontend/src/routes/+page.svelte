@@ -1,7 +1,13 @@
 <script>
-  import { onDestroy } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import { PUBLIC_API_BASE } from '$env/static/public';
+  import { analyzeFaceShape, warmupFaceAnalyzer } from '$lib/faceAnalyzer';
+  import { findHaircutsForShape } from '$lib/haircuts';
+
+  const FALLBACK_PLACEHOLDER = 'https://your-backend-url.com';
   const API_BASE = PUBLIC_API_BASE || 'http://127.0.0.1:8000';
+  const trimmedBase = API_BASE.trim();
+  const hasRemoteBackend = trimmedBase && !trimmedBase.includes('your-backend-url.com');
 
   let selectedFile = null;
   let message = '';
@@ -14,6 +20,20 @@
   let canvasElement;
   let stream = null;
   let capturedImageBlob = null;
+  let usingLocalAnalyzer = !hasRemoteBackend;
+
+  onMount(async () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    if (!hasRemoteBackend) {
+      try {
+        await warmupFaceAnalyzer();
+      } catch (error) {
+        console.error('Failed to warm up face analyzer', error);
+      }
+    }
+  });
 
   // Function to start camera stream
   async function startCamera() {
@@ -97,8 +117,16 @@
       return imagePath;
     }
     const sanitizedPath = imagePath.replace(/^\/+/, '');
-    const trimmedBase = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
-    return `${trimmedBase}/${sanitizedPath}`;
+    const normalizedBase = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
+    return `${normalizedBase}/${sanitizedPath}`;
+  }
+
+  async function analyzeLocally(blob) {
+    const result = await analyzeFaceShape(blob);
+    faceShape = result.faceShape;
+    recommendedHaircuts = findHaircutsForShape(result.faceShape);
+    usingLocalAnalyzer = true;
+    message = 'Analysis complete (powered by on-device detection).';
   }
 
   async function handleSubmit() {
@@ -114,22 +142,38 @@
     recommendedHaircuts = [];
     isLoading = true;
     try {
-      const trimmedBase = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
-      const response = await fetch(`${trimmedBase}/uploadimage/`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (response.ok) {
-        const result = await response.json();
-        faceShape = result.face_shape;
-        recommendedHaircuts = result.recommended_haircuts;
-        message = 'Analysis Complete!';
+      if (hasRemoteBackend) {
+        const normalizedBase = trimmedBase.endsWith('/') ? trimmedBase.slice(0, -1) : trimmedBase;
+        const response = await fetch(`${normalizedBase}/uploadimage/`, {
+          method: 'POST',
+          body: formData,
+        });
+        if (response.ok) {
+          const result = await response.json();
+          faceShape = result.face_shape;
+          recommendedHaircuts = result.recommended_haircuts;
+          message = 'Analysis Complete!';
+          usingLocalAnalyzer = false;
+        } else {
+          const error = await response.json();
+          throw new Error(error.detail || response.statusText);
+        }
       } else {
-        const error = await response.json();
-        message = `Error: ${error.detail || response.statusText}`;
+        await analyzeLocally(fileToUpload);
       }
     } catch (error) {
-      message = `An error occurred: ${error.message}`;
+      console.error('Analysis failed', error);
+      if (hasRemoteBackend) {
+        try {
+          message = 'Remote analysis failed. Trying offline detection...';
+          await analyzeLocally(fileToUpload);
+        } catch (fallbackError) {
+          console.error('Local analysis failed', fallbackError);
+          message = `An error occurred: ${fallbackError.message}`;
+        }
+      } else {
+        message = `An error occurred: ${error.message}`;
+      }
     } finally {
       isLoading = false;
     }
@@ -207,6 +251,9 @@
 
      {#if message}
         <p class="message {message.startsWith('Error') ? 'error' : 'success'}">{message}</p>
+      {/if}
+      {#if usingLocalAnalyzer}
+        <p class="message info">Processing happens in your browser, so no upload is required.</p>
       {/if}
         </div>
   </section>
@@ -466,6 +513,11 @@
     color: #155724;
     background-color: #d4edda;
     border: 1px solid #c3e6cb;
+  }
+  .info {
+    color: #0a3069;
+    background-color: #e8f0fe;
+    border: 1px solid #bfd3ff;
   }
   .image-preview-container {
     max-width: 300px;
