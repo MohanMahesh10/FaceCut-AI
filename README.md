@@ -1,7 +1,8 @@
 # FaceCut AI - Intelligent Haircut Recommendation System
 
 
-![Screenshot 2025-05-14 220448](https://github.com/user-attachments/assets/73a2f15f-feff-4394-ae5e-0cb18162abfa)
+<img width="642" height="801" alt="image" src="https://github.com/user-attachments/assets/c6a83e7e-daa5-4195-bcdb-60b43519bf21" />
+
 
 
 ## Introduction
